@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocuGenius - Smart Document QA</title>
+
+    <style>
+        /* ChatGPT Inspired Dark Theme */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #343541;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+            background: #444654;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #25c0ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            background: #25c0ff;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        .file-label:hover {
+            background: #1b9ed6;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input {
+            background: #3c3f4a;
+            color: white;
+        }
+
+        button {
+            background: #25c0ff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1b9ed6;
+        }
+
+        #uploadStatus, #answer {
+            margin-top: 10px;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #282b30;
+        }
+
+        .chat {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+
+        .chat-bubble {
+            background: #4a4d55;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            margin-bottom: 10px;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: #25c0ff;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: #3c3f4a;
+        }
+
+        .contact-links {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .contact-links a {
+            display: block;
+            color: #25c0ff;
+            text-decoration: none;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        .contact-links a:hover {
+            color: #1b9ed6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 DocuGenius - Smart QA Bot 🤖</h1>
+
+        <label for="file" class="file-label">📤 Upload PDF or Image</label>
+        <input type="file" id="file" class="file-input" accept=".pdf, .png, .jpg, .jpeg">
+        <button onclick="uploadFile()">Upload</button>
+
+        <p id="uploadStatus"></p>
+
+        <input type="text" id="question" placeholder="Ask about the document...">
+        <button onclick="askQuestion()">Ask</button>
+
+        <div id="chat" class="chat"></div>
+
+        <div class="contact-links">
+            <p>🌟 Connect with Me:</p>
+            <a href="mailto:ayumallick7079@gmail.com">📧 Email: ayumallick7079@gmail.com</a>
+            <a href="https://github.com/ayazalam2023" target="_blank">💻 GitHub: github.com/ayazalam2023</a>
+            <a href="https://www.linkedin.com/in/ayaz-alam-ab0b69312" target="_blank">🔗 LinkedIn: linkedin.com/in/ayaz-alam-ab0b69312</a>
+            <a href="https://wa.me/9027585203" target="_blank">📱 WhatsApp: 9142785551</a>
+        </div>
+    </div>
+
+    <script>
+        function uploadFile() {
+            let fileInput = document.getElementById("file");
+            let file = fileInput.files[0];
+
+            if (!file) {
+                alert("📁 Please select a file first.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", file);
+
+            document.getElementById("uploadStatus").innerText = "🔄 Uploading and processing...";
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById("uploadStatus").innerText = "✅ " + data.message;
+                }
+                if (data.text) {
+                    document.getElementById("uploadStatus").innerText += `\n📄 Extracted Text: ${data.text}`;
+                } else {
+                    document.getElementById("uploadStatus").innerText = "❌ Upload failed: No text extracted.";
+                }
+            })
+            .catch(error => console.error("⚠️ Error uploading file:", error));
+        }
+
+        function askQuestion() {
+            let question = document.getElementById("question").value;
+            if (!question) {
+                alert("❓ Please enter a question.");
+                return;
+            }
+
+            let chatDiv = document.getElementById("chat");
+
+            let userBubble = document.createElement("div");
+            userBubble.className = "chat-bubble user";
+            userBubble.textContent = "🙋‍♂️ " + question;
+            chatDiv.appendChild(userBubble);
+
+            fetch("/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let botBubble = document.createElement("div");
+                botBubble.className = "chat-bubble bot";
+                botBubble.textContent = "🤖 " + (data.answer ? data.answer : "Sorry, I couldn't find an answer.");
+                chatDiv.appendChild(botBubble);
+            })
+            .catch(error => console.error("⚠️ Error fetching answer:", error));
+        }
+    </script>
+</body>
+</html>
